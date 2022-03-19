@@ -1,26 +1,51 @@
 package com.example.penaltykick
 
+import android.content.Intent
+
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider.getUriForFile
-import java.io.File
-import java.io.IOException
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.zxing.client.android.Intents
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Multipart
+import retrofit2.http.POST
+import retrofit2.http.Part
+import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.jvm.Throws
 
 class MainActivity : AppCompatActivity() {
     lateinit var btnReturn: Button
+    lateinit var btnRent:Button
     lateinit var imageView:ImageView //test
     lateinit var currentPhotoPath:String
     lateinit var activityResultLauncher:ActivityResultLauncher<Uri>
+    lateinit var qrScanLauncher:ActivityResultLauncher<ScanOptions>
+
+    lateinit var photoUri:Uri
+    val serverAddress="http://10.0.2.2:5000" //using localhost in emulator
+
 
 
 
@@ -30,10 +55,56 @@ class MainActivity : AppCompatActivity() {
         val storageDir:File?=getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         return File.createTempFile(
             "JPEG_${timeStamp}_",".jpg",storageDir).apply {
-                currentPhotoPath=absolutePath
+            currentPhotoPath=absolutePath
         }
 
     }
+
+    interface retrofit_interface{
+        @Multipart
+        @POST("/photo")
+        fun postImageRequest(@Part imageFile: MultipartBody.Part): Call<String>
+
+    }
+
+    fun testRetrofit(path:String){
+        val file=File(path)
+        val fileName="testfile"   //can be modified
+
+        var requestBody:RequestBody= RequestBody.create(MediaType.parse("image/*"),file)
+        var body:MultipartBody.Part=MultipartBody.Part.createFormData("uploaded_file",fileName,requestBody)
+
+
+        var gson: Gson =GsonBuilder()
+            .setLenient()
+            .create()
+        var retrofit= Retrofit.Builder()
+            .baseUrl(serverAddress)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+
+        var server=retrofit.create(retrofit_interface::class.java)
+
+        server.postImageRequest(body).enqueue(object : Callback<String> {
+            override fun onFailure(call: Call<String>, t: Throwable) {
+                Log.d("retrofit result1",t.localizedMessage)
+            }
+
+            override fun onResponse(call: Call<String>, response: Response<String>) {
+                if(response?.isSuccessful){
+                    Log.d("retrofit result2",""+response?.body().toString())
+                }
+                else{
+                    Log.d("retrofit result3","Some error occured")
+                }
+
+            }
+        })
+
+
+
+    }
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,13 +112,28 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         btnReturn=findViewById<Button>(R.id.ret)
+        btnRent=findViewById<Button>(R.id.rent)
         imageView=findViewById<ImageView>(R.id.resultImage)
 
         activityResultLauncher=registerForActivityResult(ActivityResultContracts.TakePicture()){ result->
             if(result){
                 //send to server
-                val f=File(currentPhotoPath)
-                imageView.setImageURI(getUriForFile(this,"com.example.penaltykick.provider",f))  //test
+                imageView.setImageURI(photoUri)  //test
+
+                //retrofit2
+                //send image to server
+                testRetrofit(currentPhotoPath)
+
+            }
+        }
+
+        qrScanLauncher=registerForActivityResult(ScanContract()){result->
+            if(result.contents==null){
+                Toast.makeText(this,"취소되었습니다.",Toast.LENGTH_LONG).show()
+            }
+            else{
+                // TODO Something
+                Log.d("scanned",result.contents.toString())
 
             }
         }
@@ -56,9 +142,18 @@ class MainActivity : AppCompatActivity() {
 
         btnReturn.setOnClickListener {
             val photoFile:File=createImageFile()
-            val photoURI:Uri= getUriForFile(this,"com.example.penaltykick.provider",photoFile)
-            activityResultLauncher.launch(photoURI)
+            photoUri= getUriForFile(this,"com.example.penaltykick.provider",photoFile)
+            activityResultLauncher.launch(photoUri)
 
+        }
+
+        btnRent.setOnClickListener {
+            val scanOptions=ScanOptions()
+            scanOptions.setBeepEnabled(false)
+            scanOptions.setOrientationLocked(true)
+            scanOptions.setPrompt("QR코드를 스캔해주세요.")
+
+            qrScanLauncher.launch(scanOptions)
         }
 
 
