@@ -47,7 +47,8 @@
         android:background="@drawable/btn_design"
         android:paddingLeft="12dp"
         android:paddingRight="12dp"
-        android:clickable="true">
+        android:clickable="true"
+        android:id="@+id/login">
         <ImageView
             android:layout_width="30dp"
             android:layout_height="30dp"
@@ -59,12 +60,12 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:textColor="@color/black"
-            android:stateListAnimator="@null"
             android:layout_gravity="center"
             android:gravity="center"
+            android:stateListAnimator="@null"
             android:text="로그인"
-            android:textSize="18sp"/>
+            android:textColor="@color/black"
+            android:textSize="18sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -102,7 +103,8 @@
         android:background="@drawable/btn_google"
         android:paddingLeft="12dp"
         android:paddingRight="12dp"
-        android:clickable="true">
+        android:clickable="true"
+        android:id="@+id/google_login">
 
         <ImageView
             android:layout_width="30dp"
