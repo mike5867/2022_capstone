@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import settings
+from deeplearning.semantic import settings
 
 def decode_seg_map_sequence(label_masks, dataset='pascal'):
     rgb_masks = []

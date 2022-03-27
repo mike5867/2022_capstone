@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".onRentActivity"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:id="@+id/rent_layout">
 
     <Button
         android:id="@+id/ret"

@@ -103,7 +103,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                 super.onLocationResult(locationResult)
                 locationResult.let{
                     for(location in it.locations){
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude,location.longitude),17F))
+                        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude,location.longitude),17F))
                         mCurrentLocation=location
                         Log.d("Main","currentLocation: ${location.latitude}, ${location.longitude}")
                     }
@@ -168,6 +168,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     }
 
+    @SuppressLint("MissingPermission")
     private fun startLocationUpdates(){
 
         val hasFineLocationPermission=ContextCompat.checkSelfPermission(this,

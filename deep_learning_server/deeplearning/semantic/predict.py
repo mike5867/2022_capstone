@@ -7,21 +7,21 @@ import os
 import os.path as osp
 from pathlib import Path
 from torchvision import transforms
-from modules.dataloaders.utils import decode_segmap
-from modules.models.deeplab_xception import DeepLabv3_plus
-from modules.models.sync_batchnorm.replicate import patch_replication_callback
+from deeplearning.semantic.modules.dataloaders.utils import decode_segmap
+from deeplearning.semantic.modules.models.deeplab_xception import DeepLabv3_plus
+from deeplearning.semantic.modules.models.sync_batchnorm.replicate import patch_replication_callback
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
 ### RUN OPTIONS ###
-MODEL_PATH = "./run/surface/deeplab/model_iou_77.pth.tar"
+MODEL_PATH = "C:/Users/mike5/Desktop/2022_capstone/deep_learning_server/deeplearning/semantic/model_iou_77.pth.tar"
 ORIGINAL_HEIGHT = 720
 ORIGINAL_WIDTH = 1280
 MODEL_HEIGHT = 512
 MODEL_WIDTH = 1024
 NUM_CLASSES = 7  # including background
-CUDA = True if torch.cuda.is_available() else False
+CUDA = False #True if torch.cuda.is_available() else False
 
 MODE = 'jpg'  # 'mp4' or 'jpg'
 DATA_PATH = 'test/jpgs'  # .mp4 path or folder containing jpg images
@@ -33,7 +33,7 @@ OUTPUT_PATH = './output/jpgs'  # where video file or jpg frames folder should be
 
 SHOW_OUTPUT = True if 'DISPLAY' in os.environ else False  # whether to cv2.show()
 
-OVERLAPPING = True  # whether to mix segmentation map and original image
+OVERLAPPING = False  # whether to mix segmentation map and original image
 FPS_OVERRIDE = 60  # None to use original video fps
 
 CUSTOM_COLOR_MAP = [
@@ -81,7 +81,6 @@ class FrameGeneratorMP4:
 
     def write(self, rgb_img):
         bgr = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2BGR)
-
         if self.show:
             cv2.imshow('output', bgr)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -122,7 +121,6 @@ class FrameGeneratorJpg:
 
     def write(self, rgb_img):
         bgr = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2BGR)
-
         if self.show:
             cv2.imshow('output', bgr)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -179,9 +177,12 @@ class ModelWrapper:
         segmap = decode_segmap(pred, dataset='custom', label_colors=CUSTOM_COLOR_MAP, n_classes=CUSTOM_N_CLASSES)
         segmap = np.array(segmap * 255).astype(np.uint8)
 
-        resized = cv2.resize(segmap, (ORIGINAL_WIDTH, ORIGINAL_HEIGHT),
-                             interpolation=cv2.INTER_NEAREST)
-        return resized
+        return segmap
+
+        #resized = cv2.resize(segmap, (ORIGINAL_WIDTH, ORIGINAL_HEIGHT),
+        #                     interpolation=cv2.INTER_NEAREST)
+
+        #return resized
 
 
 def main():
@@ -197,16 +198,22 @@ def main():
 
     for index, img in enumerate(tqdm(generator)):
         segmap = model_wrapper.predict(img)
+
+        segmap = cv2.resize(segmap, (ORIGINAL_WIDTH, ORIGINAL_HEIGHT),
+                             interpolation=cv2.INTER_NEAREST)
         if OVERLAPPING:
             h, w, _ = np.array(segmap).shape
             img_resized = cv2.resize(img, (w, h))
             result = (img_resized * 0.5 + segmap * 0.5).astype(np.uint8)
         else:
             result = segmap
+
         generator.write(result)
+
 
     generator.close()
     print('Done.')
+
 
 
 if __name__ == '__main__':

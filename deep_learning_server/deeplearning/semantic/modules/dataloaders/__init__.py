@@ -1,15 +1,15 @@
 from torch.utils.data import DataLoader
-import settings
+from deeplearning.semantic import settings
 
 def make_data_loader(**kwargs):
 
     if settings.dataset == 'pascal':
-        from modules.dataloaders.datasets import pascal
+        from deeplearning.semantic.modules.dataloaders.datasets import pascal
 
         train_set = pascal.VOCSegmentation(settings, split='train')
         val_set = pascal.VOCSegmentation(settings, split='val')
         if settings.use_sbd:
-            from modules.dataloaders.datasets import sbd, combine_dbs
+            from deeplearning.semantic.modules.dataloaders.datasets import sbd, combine_dbs
             sbd_train = sbd.SBDSegmentation(settings, split=['train', 'val'])
             train_set = combine_dbs.CombineDBs([train_set, sbd_train], excluded=[val_set])
 
@@ -21,7 +21,7 @@ def make_data_loader(**kwargs):
         return train_loader, val_loader, test_loader, num_class
 
     elif settings.dataset == 'cityscapes':
-        from modules.dataloaders.datasets import cityscapes
+        from deeplearning.semantic.modules.dataloaders.datasets import cityscapes
 
         train_set = cityscapes.CityscapesSegmentation(settings, split='train')
         val_set = cityscapes.CityscapesSegmentation(settings, split='val')
@@ -34,7 +34,7 @@ def make_data_loader(**kwargs):
         return train_loader, val_loader, test_loader, num_class
 
     elif settings.dataset == 'coco':
-        from modules.dataloaders.datasets import coco
+        from deeplearning.semantic.modules.dataloaders.datasets import coco
 
         train_set = coco.COCOSegmentation(split='train')
         val_set = coco.COCOSegmentation(settings.root_dir, split='valid')
@@ -45,7 +45,7 @@ def make_data_loader(**kwargs):
         return train_loader, val_loader, test_loader, num_class
 
     elif settings.dataset == 'surface':
-        from modules.dataloaders.datasets import surface
+        from deeplearning.semantic.modules.dataloaders.datasets import surface
 
         train_set = surface.SurfaceSegmentation(split='train')
         val_set = surface.SurfaceSegmentation(split='valid')

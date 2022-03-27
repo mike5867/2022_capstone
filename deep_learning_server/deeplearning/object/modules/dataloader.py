@@ -66,13 +66,11 @@ class AlbumentationDataset(Dataset):
 
         target = generate_target(annotation_path)
 
-        albumentations.pytorch.transforms.ToTensorV2()
 
         # albumentation
         if self.transform:
             transformed = self.transform(image=image, bboxes=target['boxes'], labels=target['labels'])
             image = transformed['image']
-            albumentations.pytorch.transforms.ToTensorV2()
             target = {'boxes': transformed['bboxes'], 'labels': transformed['labels']}
 
         target['boxes'] = torch.as_tensor(target['boxes'], dtype=torch.float32)

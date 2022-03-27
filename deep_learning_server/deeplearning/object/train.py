@@ -4,22 +4,9 @@ import time
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from deeplearning.object.modules import setting
+from deeplearning.object import setting
 from deeplearning.object.modules import dataloader
 from deeplearning.object.modules import faster_rcnn
-
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-
-dataset = dataloader.AlbumentationDataset(path=setting.train_path)
-data_loader = torch.utils.data.DataLoader(dataset, batch_size=setting.batch_size, collate_fn=dataloader.collate_fn)
-
-model = faster_rcnn.Faster_RCNN(setting.num_classes)
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-model.to(device)
-
-num_epochs= setting.epoch
-learning_rate= setting.learning_rate
-
 
 def train():
     #torch.cuda.empty_cache()
@@ -53,5 +40,26 @@ def train():
         print(epoch, epoch_loss, f'time: {time.time() - start}')
 
     torch.save(model.state_dict(), f'Faster R-CNN_{num_epochs}_{learning_rate}.pt')
+
+
+
+
+if __name__=="__main__":
+    os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+
+    dataset = dataloader.AlbumentationDataset(path=setting.train_path, transform=setting.albumentations_transform)
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=setting.batch_size, collate_fn=dataloader.collate_fn)
+
+    model = faster_rcnn.Faster_RCNN(setting.num_classes)
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    model.to(device)
+
+    num_epochs = setting.epoch
+    learning_rate = setting.learning_rate
+
+    train()
+
+
+
 
 
