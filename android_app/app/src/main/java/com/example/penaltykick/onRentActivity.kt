@@ -1,6 +1,5 @@
 package com.example.penaltykick
 
-import android.content.Intent
 import android.content.pm.PackageManager
 
 import android.net.Uri
@@ -9,11 +8,8 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.view.View
+import android.widget.*
 
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -21,20 +17,17 @@ import androidx.core.content.FileProvider.getUriForFile
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.google.zxing.client.android.Intents
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Multipart
-import retrofit2.http.POST
-import retrofit2.http.Part
+import retrofit2.converter.scalars.ScalarsConverterFactory
+import retrofit2.http.*
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,16 +35,15 @@ import kotlin.jvm.Throws
 
 class onRentActivity : AppCompatActivity() {
     lateinit var btnReturn: Button
-    lateinit var imageView:ImageView //test
     lateinit var currentPhotoPath:String
     lateinit var activityResultLauncher:ActivityResultLauncher<Uri>
     lateinit var lLayout: View
-
+    lateinit var progressDialog:ProgressDialog
     lateinit var photoUri:Uri
-    val serverAddress="http://10.0.2.2:5000" //using localhost in emulator
-    val PERMISSION_REQUEST_CODE=300
-    val REQUIRED_PERMISSONS=Array<String>(1){android.Manifest.permission.CAMERA}
-
+    private val DEEPLEARNING_SERVER_ADDRESS="http://192.168.0.17:2258"
+    private val MAIN_SERVER_ADDRESS=""
+    private val PERMISSION_REQUEST_CODE=300
+    private val REQUIRED_PERMISSONS=Array<String>(1){android.Manifest.permission.CAMERA}
 
     @Throws(IOException::class)
     private fun createImageFile():File{
@@ -64,16 +56,28 @@ class onRentActivity : AppCompatActivity() {
 
     }
 
-    interface retrofit_interface{
-        @Multipart
-        @POST("/photo")
-        fun postImageRequest(@Part imageFile: MultipartBody.Part): Call<String>
+    private fun connectMainToLock(lockerId:Int){
+        val retrofit=Retrofit.Builder()
+            .baseUrl(MAIN_SERVER_ADDRESS)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
+        val server=retrofit.create(RetrofitInterface::class.java)
+
+        server.lockRequest(lockerId).enqueue(object:Callback<String>{
+            override fun onFailure(call: Call<String>, t: Throwable) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onResponse(call: Call<String>, response: Response<String>) {
+                TODO("Not yet implemented")
+            }
+        })
     }
 
-    fun testRetrofit(path:String){
+    private fun connectDeepLearning(path:String){
         val file=File(path)
-        val fileName="testfile"   //can be modified
+        val fileName=photoUri.lastPathSegment.toString()
 
         var requestBody:RequestBody= RequestBody.create(MediaType.parse("image/*"),file)
         var body:MultipartBody.Part=MultipartBody.Part.createFormData("uploaded_file",fileName,requestBody)
@@ -83,29 +87,45 @@ class onRentActivity : AppCompatActivity() {
             .setLenient()
             .create()
         var retrofit= Retrofit.Builder()
-            .baseUrl(serverAddress)
+            .baseUrl(DEEPLEARNING_SERVER_ADDRESS)
+            .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
 
-        var server=retrofit.create(retrofit_interface::class.java)
+        val server=retrofit.create(RetrofitInterface::class.java)
 
         server.postImageRequest(body).enqueue(object : Callback<String> {
             override fun onFailure(call: Call<String>, t: Throwable) {
-                Log.d("retrofit result1",t.localizedMessage)
+                Log.d("retrofit",t.localizedMessage)
+                Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_SHORT).show()
+                progressDialog.dismiss()
             }
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 if(response?.isSuccessful){
-                    Log.d("retrofit result2",""+response?.body().toString())
+                    Log.d("retrofit",response?.body().toString())
+                    val resultCode=JSONObject(response.body().toString()).getString("result")
+
+                    if (resultCode=="pass"){
+                        Toast.makeText(applicationContext,"기기 잠금을 요청합니다.",Toast.LENGTH_SHORT).show()
+                        //arduino server request
+                        connectMainToLock(1)
+                    }
+                    else if(resultCode=="fail"){
+                        Toast.makeText(applicationContext,"올바른 장소에 주차 후 다시 반납하세요.",Toast.LENGTH_LONG).show()
+                    }
+                    else{
+                        Toast.makeText(applicationContext,"기기를 인식할 수 없습니다.",Toast.LENGTH_LONG).show()
+                    }
                 }
                 else{
-                    Log.d("retrofit result3","Some error occured")
+                    Log.d("retrofit","Some error occured")
+                    Toast.makeText(applicationContext,"서버 응답이 잘못되었습니다.",Toast.LENGTH_SHORT).show()
                 }
 
+                progressDialog.dismiss()
             }
         })
-
-
 
     }
 
@@ -118,11 +138,13 @@ class onRentActivity : AppCompatActivity() {
         btnReturn=findViewById<Button>(R.id.ret)
         lLayout=findViewById(R.id.rent_layout)
 
+        progressDialog=ProgressDialog(this)
+
         activityResultLauncher=registerForActivityResult(ActivityResultContracts.TakePicture()){ result->
             if(result){
-                //retrofit2
                 //send image to server
-                testRetrofit(currentPhotoPath)
+                progressDialog.show()
+                connectDeepLearning(currentPhotoPath)
 
             }
         }
