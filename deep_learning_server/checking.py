@@ -40,13 +40,9 @@ def judge(img_path):
 
     for h in range(target_segmap):
         for w in range(target_segmap[h]):
-            if target_segmap[h][w] == [255, 0, 255]: #횡단 보도
+            if target_segmap[h][w][0]==255 and target_segmap[h][w][1]==0 and target_segmap[h][w][2]==255: #횡단 보도
                 return result_code.Result.FAIL
-            if target_segmap[h][w] == [255, 255, 0]: #점자 블록
+            if target_segmap[h][w][0]==255 and target_segmap[h][w][1]==255 and target_segmap[h][w][2]==0: #점자 블록
                 return result_code.Result.FAIL
 
     return result_code.Result.PASS
-
-img_path='./received_photo/fail1.jpg'
-judge(img_path)
-

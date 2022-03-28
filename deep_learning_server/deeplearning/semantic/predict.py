@@ -15,7 +15,7 @@ from PIL import Image
 from tqdm import tqdm
 
 ### RUN OPTIONS ###
-MODEL_PATH = "C:/Users/mike5/Desktop/2022_capstone/deep_learning_server/deeplearning/semantic/model_iou_77.pth.tar"
+MODEL_PATH = "C:/Users/SeongJin/Desktop/2022_capstone/deep_learning_server/deeplearning/semantic/model_iou_77.pth.tar"
 ORIGINAL_HEIGHT = 720
 ORIGINAL_WIDTH = 1280
 MODEL_HEIGHT = 512
