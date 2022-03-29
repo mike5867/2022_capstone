@@ -1,5 +1,6 @@
 package com.example.penaltykick
 
+import android.content.Intent
 import android.content.pm.PackageManager
 
 import android.net.Uri
@@ -40,8 +41,8 @@ class onRentActivity : AppCompatActivity() {
     lateinit var lLayout: View
     lateinit var progressDialog:ProgressDialog
     lateinit var photoUri:Uri
-    private val DEEPLEARNING_SERVER_ADDRESS="http://192.168.0.17:2258"
-    private val MAIN_SERVER_ADDRESS=""
+    lateinit var DEEPLEARNING_SERVER_ADDRESS:String
+    lateinit var MAIN_SERVER_ADDRESS:String
     private val PERMISSION_REQUEST_CODE=300
     private val REQUIRED_PERMISSONS=Array<String>(1){android.Manifest.permission.CAMERA}
 
@@ -50,7 +51,7 @@ class onRentActivity : AppCompatActivity() {
         val timeStamp:String=SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
         val storageDir:File?=getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         return File.createTempFile(
-            "JPEG_${timeStamp}_",".jpg",storageDir).apply {
+            "${timeStamp}_",".jpg",storageDir).apply {
             currentPhotoPath=absolutePath
         }
 
@@ -59,6 +60,7 @@ class onRentActivity : AppCompatActivity() {
     private fun connectMainToLock(lockerId:Int){
         val retrofit=Retrofit.Builder()
             .baseUrl(MAIN_SERVER_ADDRESS)
+            .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
@@ -66,11 +68,34 @@ class onRentActivity : AppCompatActivity() {
 
         server.lockRequest(lockerId).enqueue(object:Callback<String>{
             override fun onFailure(call: Call<String>, t: Throwable) {
-                TODO("Not yet implemented")
+                Log.d("main server",t.localizedMessage)
+                Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
+                progressDialog.dismiss()
             }
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
-                TODO("Not yet implemented")
+                if(response?.isSuccessful){
+                    Log.d("main server",response?.body().toString())
+                    val resultCode=JSONObject(response.body().toString()).getString("result")
+
+                    if (resultCode=="success") {
+                        Toast.makeText(applicationContext, "잠금이 완료되었습니다.", Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
+                        val intent= Intent(this@onRentActivity,MainActivity::class.java)
+                        startActivity(intent)
+                        finish()
+
+                    }
+                    else{ //fail
+                        Toast.makeText(applicationContext,"잠금에 실패하였습니다.",Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
+                    }
+                }
+                else{
+                    Log.d("main server","Some error occured")
+                    Toast.makeText(applicationContext,"서버 응답이 잘못되었습니다.",Toast.LENGTH_LONG).show()
+                    progressDialog.dismiss()
+                }
             }
         })
     }
@@ -96,34 +121,36 @@ class onRentActivity : AppCompatActivity() {
 
         server.postImageRequest(body).enqueue(object : Callback<String> {
             override fun onFailure(call: Call<String>, t: Throwable) {
-                Log.d("retrofit",t.localizedMessage)
-                Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_SHORT).show()
+                Log.d("deep learning server",t.localizedMessage)
+                Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
                 progressDialog.dismiss()
             }
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 if(response?.isSuccessful){
-                    Log.d("retrofit",response?.body().toString())
+                    Log.d("deep learning server",response?.body().toString())
                     val resultCode=JSONObject(response.body().toString()).getString("result")
 
                     if (resultCode=="pass"){
-                        Toast.makeText(applicationContext,"기기 잠금을 요청합니다.",Toast.LENGTH_SHORT).show()
+                        Toast.makeText(applicationContext,"기기 잠금을 요청합니다.",Toast.LENGTH_LONG).show()
                         //arduino server request
+                        // TODO get locker id
                         connectMainToLock(1)
                     }
                     else if(resultCode=="fail"){
                         Toast.makeText(applicationContext,"올바른 장소에 주차 후 다시 반납하세요.",Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
                     }
                     else{
                         Toast.makeText(applicationContext,"기기를 인식할 수 없습니다.",Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
                     }
                 }
                 else{
-                    Log.d("retrofit","Some error occured")
-                    Toast.makeText(applicationContext,"서버 응답이 잘못되었습니다.",Toast.LENGTH_SHORT).show()
+                    Log.d("deep learning server","Some error occured")
+                    Toast.makeText(applicationContext,"서버 응답이 잘못되었습니다.",Toast.LENGTH_LONG).show()
+                    progressDialog.dismiss()
                 }
-
-                progressDialog.dismiss()
             }
         })
 
@@ -134,6 +161,9 @@ class onRentActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_on_rent)
+
+        MAIN_SERVER_ADDRESS=getString(R.string.main_server)
+        DEEPLEARNING_SERVER_ADDRESS=getString(R.string.deep_learning_server)
 
         btnReturn=findViewById<Button>(R.id.ret)
         lLayout=findViewById(R.id.rent_layout)

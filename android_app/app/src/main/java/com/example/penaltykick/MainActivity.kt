@@ -1,66 +1,40 @@
 package com.example.penaltykick
 
 import android.annotation.SuppressLint
-import android.content.ContentValues.TAG
-import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.location.*
-import android.location.LocationRequest
 
-import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Environment
 import android.os.Looper
 import android.util.Log
 import android.view.View
 
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMap.OnMyLocationButtonClickListener
 import com.google.android.gms.maps.GoogleMap.OnMyLocationClickListener
-import androidx.core.content.FileProvider.getUriForFile
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.zxing.client.android.Intents
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import okhttp3.MediaType
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Multipart
-import retrofit2.http.POST
-import retrofit2.http.Part
-import java.io.*
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.jar.Manifest
-import javax.security.auth.callback.PasswordCallback
-import kotlin.jvm.Throws
+import retrofit2.converter.scalars.ScalarsConverterFactory
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback,OnMyLocationButtonClickListener,
 OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
@@ -73,15 +47,69 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     lateinit var mFusedLocationClient:FusedLocationProviderClient
     lateinit var mCurrentLocation:Location
     lateinit var mLayout: View
+    lateinit  var progressDialog: ProgressDialog
+    lateinit var MAIN_SERVER_ADDRESS:String
+
 
     val UPDATE_INTERVAL_MS=10000
     val FASTEST_UPDATE_INTERVAL_MS=5000
     val PERMISSIONS_REQUEST_CODE=100
     val REQUIRED_PERMISSIONS=Array<String>(1){android.Manifest.permission.ACCESS_FINE_LOCATION}
 
+
+    private fun connectMainToUnlock(lockerId:Int){
+        val retrofit=Retrofit.Builder()
+            .baseUrl(MAIN_SERVER_ADDRESS)
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val server=retrofit.create(RetrofitInterface::class.java)
+
+        server.unlockRequest(lockerId).enqueue(object:Callback<String>{
+            override fun onFailure(call: Call<String>, t: Throwable) {
+                Log.d("main server",t.localizedMessage)
+                Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
+                progressDialog.dismiss()
+            }
+
+            override fun onResponse(call: Call<String>, response: Response<String>) {
+                if(response?.isSuccessful){
+                    Log.d("main server",response?.body().toString())
+                    val resultCode=JSONObject(response.body().toString()).getString("result")
+
+                    if(resultCode=="success"){
+                        Toast.makeText(applicationContext,"잠금 해제가 완료되었습니다.",Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
+                        val intent=Intent(this@MainActivity,onRentActivity::class.java)
+                        startActivity(intent)
+                        finish()
+                    }
+                    else if(resultCode=="fail"){
+                        Toast.makeText(applicationContext,"잠금 해제에 실패했습니다.",Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
+                    }
+                    else{ // resultCode=="already unlock"
+                        Toast.makeText(applicationContext,"사용 중인 기기입니다.",Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
+                    }
+                }
+                else{
+                    Log.d("main server","Some error occured")
+                    Toast.makeText(applicationContext,"서버 응답이 잘못되었습니다.",Toast.LENGTH_LONG).show()
+                    progressDialog.dismiss()
+                }
+            }
+        })
+
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        MAIN_SERVER_ADDRESS=getString(R.string.main_server)
+        progressDialog=ProgressDialog(this)
 
         val mapFragment=supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -121,8 +149,9 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                 Toast.makeText(this,"취소되었습니다.",Toast.LENGTH_LONG).show()
             }
             else{
-                // TODO Something
-                Log.d("scanned",result.contents.toString())
+                Log.d("QR scanned",result.contents)
+                val lockerId=result.contents.toInt()
+                connectMainToUnlock(lockerId)
 
             }
         }

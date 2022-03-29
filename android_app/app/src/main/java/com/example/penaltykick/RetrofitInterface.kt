@@ -9,10 +9,10 @@ interface RetrofitInterface {
     @POST("/photo")
     fun postImageRequest(@Part imageFile: MultipartBody.Part): Call<String>
 
-    @GET("/lock/?id={locker_id}")
-    fun lockRequest(@Path("locker_id") lockerId:Int): Call<String>
+    @GET("/lock")
+    fun lockRequest(@Query("id") locker_id:Int): Call<String>
 
-    @GET("/unlock/?id={locker_id}")
-    fun unlockRequest(@Path("locker_id")lockerId: Int): Call<String>
+    @GET("/unlock")
+    fun unlockRequest(@Query("id") locker_id:Int): Call<String>
 
 }
