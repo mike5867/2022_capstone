@@ -64,7 +64,7 @@ def unlock_request():
     result=cursor.fetchone()
 
     if result[0]==0: # 잠겨있지 않은 경우
-        return make_response(jsonify({"result":"already lock"}))
+        return make_response(jsonify({"result":"already unlock"}))
 
     for i in range(0,3):
         sql="""update locker set lockflag=0, checkflag=0 where id="""+locker_id

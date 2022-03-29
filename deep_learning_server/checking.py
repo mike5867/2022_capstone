@@ -38,8 +38,9 @@ def judge(img_path):
     target_segmap = segmap[ybr - target_height:ybr + 1, xtl:xbr + 1, :]
     print("target segmap: \n", target_segmap)
 
-    for h in range(target_segmap):
-        for w in range(target_segmap[h]):
+    # judge logic
+    for h in range(len(target_segmap)):
+        for w in range(len(target_segmap[h])):
             if target_segmap[h][w][0]==255 and target_segmap[h][w][1]==0 and target_segmap[h][w][2]==255: #횡단 보도
                 return result_code.Result.FAIL
             if target_segmap[h][w][0]==255 and target_segmap[h][w][1]==255 and target_segmap[h][w][2]==0: #점자 블록
