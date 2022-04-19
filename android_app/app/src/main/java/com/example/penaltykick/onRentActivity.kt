@@ -1,6 +1,7 @@
 package com.example.penaltykick
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 
 import android.net.Uri
@@ -20,6 +21,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import okhttp3.MediaType
 import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import org.json.JSONObject
 import retrofit2.Call
@@ -32,7 +34,9 @@ import retrofit2.http.*
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 import kotlin.jvm.Throws
+import kotlin.properties.Delegates
 
 class onRentActivity : AppCompatActivity() {
     lateinit var btnReturn: Button
@@ -43,8 +47,16 @@ class onRentActivity : AppCompatActivity() {
     lateinit var photoUri:Uri
     lateinit var DEEPLEARNING_SERVER_ADDRESS:String
     lateinit var MAIN_SERVER_ADDRESS:String
+    var lockerID by Delegates.notNull<Int>()
+    lateinit var mPreferences:SharedPreferences
     private val PERMISSION_REQUEST_CODE=300
     private val REQUIRED_PERMISSONS=Array<String>(1){android.Manifest.permission.CAMERA}
+
+    val okHttpClient= OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     @Throws(IOException::class)
     private fun createImageFile():File{
@@ -60,6 +72,7 @@ class onRentActivity : AppCompatActivity() {
     private fun connectMainToLock(lockerId:Int){
         val retrofit=Retrofit.Builder()
             .baseUrl(MAIN_SERVER_ADDRESS)
+            .client(okHttpClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -79,6 +92,10 @@ class onRentActivity : AppCompatActivity() {
                     val resultCode=JSONObject(response.body().toString()).getString("result")
 
                     if (resultCode=="success") {
+                        val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
+                        preferencesEditor.putInt("lockerid",0)
+                        preferencesEditor.apply()
+
                         Toast.makeText(applicationContext, "잠금이 완료되었습니다.", Toast.LENGTH_LONG).show()
                         progressDialog.dismiss()
                         val intent= Intent(this@onRentActivity,MainActivity::class.java)
@@ -113,6 +130,7 @@ class onRentActivity : AppCompatActivity() {
             .create()
         var retrofit= Retrofit.Builder()
             .baseUrl(DEEPLEARNING_SERVER_ADDRESS)
+            .client(okHttpClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -134,8 +152,8 @@ class onRentActivity : AppCompatActivity() {
                     if (resultCode=="pass"){
                         Toast.makeText(applicationContext,"기기 잠금을 요청합니다.",Toast.LENGTH_LONG).show()
                         //arduino server request
-                        // TODO get locker id
-                        connectMainToLock(1)
+
+                        connectMainToLock(lockerID)
                     }
                     else if(resultCode=="fail"){
                         Toast.makeText(applicationContext,"올바른 장소에 주차 후 다시 반납하세요.",Toast.LENGTH_LONG).show()
@@ -164,6 +182,9 @@ class onRentActivity : AppCompatActivity() {
 
         MAIN_SERVER_ADDRESS=getString(R.string.main_server)
         DEEPLEARNING_SERVER_ADDRESS=getString(R.string.deep_learning_server)
+
+        mPreferences=getSharedPreferences("user", MODE_PRIVATE)
+        lockerID=mPreferences.getInt("lockerid",0)
 
         btnReturn=findViewById<Button>(R.id.ret)
         lLayout=findViewById(R.id.rent_layout)

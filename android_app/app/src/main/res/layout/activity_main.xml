@@ -9,6 +9,14 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:id="@+id/logout"
+        android:text="로그아웃"
+        android:textSize="12sp"
+        android:background="@drawable/btn_design"/>
+
     <fragment
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -15,4 +15,10 @@ interface RetrofitInterface {
     @GET("/unlock")
     fun unlockRequest(@Query("id") locker_id:Int): Call<String>
 
+    @GET("/login")
+    fun loginRequest(@Query("id")id:String, @Query("pw")pw:String):Call<String>
+
+
+
+
 }

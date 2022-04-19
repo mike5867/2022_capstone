@@ -1,6 +1,7 @@
 package com.example.penaltykick
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -11,6 +12,8 @@ import android.view.WindowInsetsController
 import android.view.WindowManager
 
 class introActivity : AppCompatActivity() {
+
+    lateinit var mPreferences: SharedPreferences
     fun setFullScreen(){
         if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.R){
             supportActionBar?.hide()
@@ -41,6 +44,22 @@ class introActivity : AppCompatActivity() {
 
         setFullScreen()
 
+        mPreferences=getSharedPreferences("user", MODE_PRIVATE)
+
+        val idcheck=mPreferences.getString("userid","not exist")
+
+        if(idcheck=="not exist"){
+            intent= Intent(this,loginActivity::class.java)
+        }else{
+            val locker=mPreferences.getInt("lockerid",0)
+            if(locker==0){
+                intent=Intent(this,MainActivity::class.java)
+            }
+            else{
+                intent=Intent(this,onRentActivity::class.java)
+            }
+        }
+
         /*
         실제 구현시에는 자동로그인 되어있을 경우 화면 넘기기
         대여 되어있는 경우에는 백그라운드로 계속 돌리게 할 것이므로 여기서는 따로 설정할 필요 없음
@@ -48,7 +67,6 @@ class introActivity : AppCompatActivity() {
          */
         val handler= Handler()
         handler.postDelayed({
-            var intent= Intent(this,loginActivity::class.java)
             startActivity(intent)
         },3000)
     }

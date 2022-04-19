@@ -2,6 +2,7 @@ package com.example.penaltykick
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.location.*
@@ -28,6 +29,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.snackbar.Snackbar
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import okhttp3.OkHttpClient
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -35,11 +37,13 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback,OnMyLocationButtonClickListener,
 OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     lateinit var btnRent:Button
+    lateinit var btnLogout:Button
     lateinit var qrScanLauncher:ActivityResultLauncher<ScanOptions>
     lateinit var mMap:GoogleMap
     lateinit var locationRequest:com.google.android.gms.location.LocationRequest
@@ -50,16 +54,23 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     lateinit  var progressDialog: ProgressDialog
     lateinit var MAIN_SERVER_ADDRESS:String
 
+    lateinit var mPreferences:SharedPreferences
 
     val UPDATE_INTERVAL_MS=10000
     val FASTEST_UPDATE_INTERVAL_MS=5000
     val PERMISSIONS_REQUEST_CODE=100
     val REQUIRED_PERMISSIONS=Array<String>(1){android.Manifest.permission.ACCESS_FINE_LOCATION}
 
+    val okHttpClient=OkHttpClient.Builder()
+        .connectTimeout(30,TimeUnit.SECONDS)
+        .readTimeout(30,TimeUnit.SECONDS)
+        .writeTimeout(30,TimeUnit.SECONDS)
+        .build()
 
     private fun connectMainToUnlock(lockerId:Int){
         val retrofit=Retrofit.Builder()
             .baseUrl(MAIN_SERVER_ADDRESS)
+            .client(okHttpClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -79,6 +90,10 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                     val resultCode=JSONObject(response.body().toString()).getString("result")
 
                     if(resultCode=="success"){
+                        val preferencesEditor=mPreferences.edit()
+                        preferencesEditor.putInt("lockerid",lockerId)
+                        preferencesEditor.apply()
+
                         Toast.makeText(applicationContext,"잠금 해제가 완료되었습니다.",Toast.LENGTH_LONG).show()
                         progressDialog.dismiss()
                         val intent=Intent(this@MainActivity,onRentActivity::class.java)
@@ -110,6 +125,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
         MAIN_SERVER_ADDRESS=getString(R.string.main_server)
         progressDialog=ProgressDialog(this)
+        mPreferences=getSharedPreferences("user", MODE_PRIVATE)
 
         val mapFragment=supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -141,8 +157,8 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
         }
 
         mLayout=findViewById(R.id.layout_main)
-
         btnRent=findViewById<Button>(R.id.rent)
+        btnLogout=findViewById<Button>(R.id.logout)
 
         qrScanLauncher=registerForActivityResult(ScanContract()){result->
             if(result.contents==null){
@@ -152,6 +168,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                 Log.d("QR scanned",result.contents)
                 val lockerId=result.contents.toInt()
                 connectMainToUnlock(lockerId)
+                progressDialog.show()
 
             }
         }
@@ -165,6 +182,16 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
             qrScanLauncher.launch(scanOptions)
         }
+
+        btnLogout.setOnClickListener{
+            val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
+            preferencesEditor.putString("userid",null)
+            preferencesEditor.apply()
+            val intent=Intent(this,loginActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+
 
 
 
@@ -193,6 +220,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
             }else{ //요청 거부한 적이 없는 경우 바로 요청
                 ActivityCompat.requestPermissions(this,REQUIRED_PERMISSIONS,PERMISSIONS_REQUEST_CODE)
             }
+            startLocationUpdates()
         }
 
     }
@@ -215,7 +243,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
         mFusedLocationClient.lastLocation.addOnSuccessListener { location->
             if(location==null){ //마지막 location이 없는 경우 default location (seoul) 설정
-                Log.e("Main","location get fail")
+                Log.d("Main","location get fail(null)")
                 val SEOUL=LatLng(37.56,126.97)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(SEOUL,17F))
             }
@@ -269,7 +297,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
 
     override fun onMyLocationButtonClick(): Boolean {
-        Toast.makeText(this,"MyLocation button clicked",Toast.LENGTH_SHORT).show()
+        Toast.makeText(this,"현재 위치로 이동합니다",Toast.LENGTH_SHORT).show()
         return false
     }
 
@@ -279,13 +307,21 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     override fun onStop() {
         super.onStop()
-        Log.d("onStop","call stopLocationUpdates")
+        Log.d("Main onStop","call stopLocationUpdates")
         mFusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
     override fun onPause() {
         super.onPause()
+        Log.d("Main onPause","call stopLocationUpdates")
         mFusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun onStart() {
+        super.onStart()
+        Log.d("Main onStart","call startLocationUpdates")
+        mFusedLocationClient.requestLocationUpdates(locationRequest,locationCallback, Looper.getMainLooper())
     }
 
 
