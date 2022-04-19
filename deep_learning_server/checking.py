@@ -45,5 +45,6 @@ def judge(img_path):
                 return result_code.Result.FAIL
             if target_segmap[h][w][0]==255 and target_segmap[h][w][1]==255 and target_segmap[h][w][2]==0: #점자 블록
                 return result_code.Result.FAIL
-
+            if target_segmap[h][w][0] == 255 and target_segmap[h][w][1] == 128 and target_segmap[h][w][2] == 0:  # 점자 블록
+                return result_code.Result.FAIL
     return result_code.Result.PASS
