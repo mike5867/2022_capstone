@@ -1,5 +1,3 @@
 <resources>
     <string name="app_name">Penalty Kick</string>
-    <string name="main_server">http://192.168.0.17:2259</string>
-    <string name="deep_learning_server">http://192.168.0.17:2258</string>
 </resources>

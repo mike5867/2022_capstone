@@ -52,8 +52,6 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     lateinit var mCurrentLocation:Location
     lateinit var mLayout: View
     lateinit  var progressDialog: ProgressDialog
-    lateinit var MAIN_SERVER_ADDRESS:String
-
     lateinit var mPreferences:SharedPreferences
 
     val UPDATE_INTERVAL_MS=10000
@@ -61,21 +59,9 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     val PERMISSIONS_REQUEST_CODE=100
     val REQUIRED_PERMISSIONS=Array<String>(1){android.Manifest.permission.ACCESS_FINE_LOCATION}
 
-    val okHttpClient=OkHttpClient.Builder()
-        .connectTimeout(30,TimeUnit.SECONDS)
-        .readTimeout(30,TimeUnit.SECONDS)
-        .writeTimeout(30,TimeUnit.SECONDS)
-        .build()
-
     private fun connectMainToUnlock(lockerId:Int){
-        val retrofit=Retrofit.Builder()
-            .baseUrl(MAIN_SERVER_ADDRESS)
-            .client(okHttpClient)
-            .addConverterFactory(ScalarsConverterFactory.create())
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
 
-        val server=retrofit.create(RetrofitInterface::class.java)
+        val server=retrofitClient.deeplearningServer
 
         server.unlockRequest(lockerId).enqueue(object:Callback<String>{
             override fun onFailure(call: Call<String>, t: Throwable) {
@@ -119,11 +105,11 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     }
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        MAIN_SERVER_ADDRESS=getString(R.string.main_server)
         progressDialog=ProgressDialog(this)
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
 

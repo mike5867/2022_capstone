@@ -45,18 +45,10 @@ class onRentActivity : AppCompatActivity() {
     lateinit var lLayout: View
     lateinit var progressDialog:ProgressDialog
     lateinit var photoUri:Uri
-    lateinit var DEEPLEARNING_SERVER_ADDRESS:String
-    lateinit var MAIN_SERVER_ADDRESS:String
     var lockerID by Delegates.notNull<Int>()
     lateinit var mPreferences:SharedPreferences
     private val PERMISSION_REQUEST_CODE=300
     private val REQUIRED_PERMISSONS=Array<String>(1){android.Manifest.permission.CAMERA}
-
-    val okHttpClient= OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
 
     @Throws(IOException::class)
     private fun createImageFile():File{
@@ -70,14 +62,8 @@ class onRentActivity : AppCompatActivity() {
     }
 
     private fun connectMainToLock(lockerId:Int){
-        val retrofit=Retrofit.Builder()
-            .baseUrl(MAIN_SERVER_ADDRESS)
-            .client(okHttpClient)
-            .addConverterFactory(ScalarsConverterFactory.create())
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
 
-        val server=retrofit.create(RetrofitInterface::class.java)
+        val server=retrofitClient.mainServer
 
         server.lockRequest(lockerId).enqueue(object:Callback<String>{
             override fun onFailure(call: Call<String>, t: Throwable) {
@@ -124,18 +110,7 @@ class onRentActivity : AppCompatActivity() {
         var requestBody:RequestBody= RequestBody.create(MediaType.parse("image/*"),file)
         var body:MultipartBody.Part=MultipartBody.Part.createFormData("uploaded_file",fileName,requestBody)
 
-
-        var gson: Gson =GsonBuilder()
-            .setLenient()
-            .create()
-        var retrofit= Retrofit.Builder()
-            .baseUrl(DEEPLEARNING_SERVER_ADDRESS)
-            .client(okHttpClient)
-            .addConverterFactory(ScalarsConverterFactory.create())
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-
-        val server=retrofit.create(RetrofitInterface::class.java)
+        val server=retrofitClient.deeplearningServer
 
         server.postImageRequest(body).enqueue(object : Callback<String> {
             override fun onFailure(call: Call<String>, t: Throwable) {
@@ -179,9 +154,6 @@ class onRentActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_on_rent)
-
-        MAIN_SERVER_ADDRESS=getString(R.string.main_server)
-        DEEPLEARNING_SERVER_ADDRESS=getString(R.string.deep_learning_server)
 
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
         lockerID=mPreferences.getInt("lockerid",0)
