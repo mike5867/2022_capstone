@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.location.*
+import android.location.LocationListener
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -26,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.snackbar.Snackbar
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -51,8 +53,9 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     lateinit var mFusedLocationClient:FusedLocationProviderClient
     lateinit var mCurrentLocation:Location
     lateinit var mLayout: View
-    lateinit  var progressDialog: ProgressDialog
+    lateinit var progressDialog: ProgressDialog
     lateinit var mPreferences:SharedPreferences
+    lateinit var lockerList:List<LockerLocation>
 
     val UPDATE_INTERVAL_MS=10000
     val FASTEST_UPDATE_INTERVAL_MS=5000
@@ -105,6 +108,43 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     }
 
+    private fun getLockerLocation(presentLat:Double,presentLong:Double){
+        val server=retrofitClient.mainServer
+
+        server.lockerLocationRequest(presentLat,presentLong).enqueue(object:Callback<List<LockerLocation>>{
+            override fun onFailure(call: Call<List<LockerLocation>>, t: Throwable) {
+                Log.d("main server","get locker location fail"+t.message.toString())
+            }
+
+            override fun onResponse(
+                call: Call<List<LockerLocation>>,
+                response: Response<List<LockerLocation>>
+            ) {
+                if(response.isSuccessful){
+                    lockerList= response.body()!!
+                    Log.d("main server","get locker location success")
+                    printLockerLocation(lockerList)
+                }
+                else{
+                    Log.d("main server","get locker location fail")
+                }
+            }
+        })
+
+    }
+
+    private fun printLockerLocation(lockers:List<LockerLocation>){
+        for(i: LockerLocation in lockers){
+            val id=i.id
+            val location=LatLng(i.latitude,i.longitude)
+
+            mMap.addMarker(
+                MarkerOptions()
+                    .position(location)
+                    .title(id.toString())
+            )
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -211,6 +251,8 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     }
 
+
+
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates(){
 
@@ -237,6 +279,10 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude,location.longitude),17F))
                 Log.d("Main ","Last Loction: ${location.latitude},${location.longitude}")
             }
+
+            //현재 위치 주변 잠금 장치 좌표 구하기
+            getLockerLocation(location.latitude,location.longitude)
+
         }
             .addOnFailureListener {
                 Log.e("Main","location error is ${it.message}")
