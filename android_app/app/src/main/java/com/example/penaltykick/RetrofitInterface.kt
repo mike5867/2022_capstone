@@ -19,7 +19,7 @@ interface RetrofitInterface {
     fun loginRequest(@Query("id")id:String, @Query("pw")pw:String):Call<String>
 
     @GET("/location")
-    fun lockerLocationRequest(@Query("lat")lat:Double, @Query("long")long:Double):Call<List<LockerLocation>>
+    fun lockerLocationRequest(@Query("lat")lat:Double, @Query("long")long:Double):Call<MutableList<LockerLocation>>
 
 
 

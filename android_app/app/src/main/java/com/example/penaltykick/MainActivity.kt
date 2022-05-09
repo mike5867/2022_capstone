@@ -5,33 +5,38 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.graphics.BitmapFactory
 import android.location.*
 import android.location.LocationListener
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.android.gms.maps.GoogleMap
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.maps.GoogleMap.OnMyLocationButtonClickListener
 import com.google.android.gms.maps.GoogleMap.OnMyLocationClickListener
 import com.google.android.gms.location.*
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.*
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.snackbar.Snackbar
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import okhttp3.OkHttpClient
+import kotlinx.coroutines.*
+import net.daum.mf.map.api.MapView
+
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -39,7 +44,9 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.CoroutineContext
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback,OnMyLocationButtonClickListener,
 OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
@@ -55,10 +62,13 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     lateinit var mLayout: View
     lateinit var progressDialog: ProgressDialog
     lateinit var mPreferences:SharedPreferences
-    lateinit var lockerList:List<LockerLocation>
+
+    var lockerList=mutableListOf<LockerLocation>()
+    var markerList=mutableListOf<Marker>()
+
 
     val UPDATE_INTERVAL_MS=10000
-    val FASTEST_UPDATE_INTERVAL_MS=5000
+    val FASTEST_UPDATE_INTERVAL_MS=10000
     val PERMISSIONS_REQUEST_CODE=100
     val REQUIRED_PERMISSIONS=Array<String>(1){android.Manifest.permission.ACCESS_FINE_LOCATION}
 
@@ -111,16 +121,17 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     private fun getLockerLocation(presentLat:Double,presentLong:Double){
         val server=retrofitClient.mainServer
 
-        server.lockerLocationRequest(presentLat,presentLong).enqueue(object:Callback<List<LockerLocation>>{
-            override fun onFailure(call: Call<List<LockerLocation>>, t: Throwable) {
+        server.lockerLocationRequest(presentLat,presentLong).enqueue(object:Callback<MutableList<LockerLocation>>{
+            override fun onFailure(call: Call<MutableList<LockerLocation>>, t: Throwable) {
                 Log.d("main server","get locker location fail"+t.message.toString())
             }
 
             override fun onResponse(
-                call: Call<List<LockerLocation>>,
-                response: Response<List<LockerLocation>>
+                call: Call<MutableList<LockerLocation>>,
+                response: Response<MutableList<LockerLocation>>
             ) {
                 if(response.isSuccessful){
+                    lockerList.clear() // 기존에 lockerlist 원소들이 존재하는 경우 초기화 후 다시 사용
                     lockerList= response.body()!!
                     Log.d("main server","get locker location success")
                     printLockerLocation(lockerList)
@@ -134,21 +145,65 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     }
 
     private fun printLockerLocation(lockers:List<LockerLocation>){
-        for(i: LockerLocation in lockers){
-            val id=i.id
-            val location=LatLng(i.latitude,i.longitude)
 
-            mMap.addMarker(
-                MarkerOptions()
-                    .position(location)
-                    .title(id.toString())
-            )
+        //기존 마커가 있는 경우 삭제
+        if (markerList.isNotEmpty()){
+            for(m: Marker in markerList){
+                m.remove()
+            }
+            markerList.clear()
+        }
+
+        //받아온 locker 값들이 있는 경우 print
+        if(lockers.isNotEmpty()){
+            for(i: LockerLocation in lockers){
+                val id=i.id
+                val location=LatLng(i.latitude,i.longitude)
+
+
+
+                val marker: Marker? =mMap.addMarker(
+                    MarkerOptions()
+                        .position(location)
+                        .title("Locker ID: $id")
+                        .icon(BitmapDescriptorFactory
+                            .fromBitmap(BitmapFactory.decodeResource(resources,R.drawable.placeholder128)))
+                )
+
+                if (marker != null) {
+                    markerList.add(marker)
+                }
+
+            }
+        }
+
+    }
+
+    /*
+    fun getAppKeyHash() {
+        try {
+            val info =
+                packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+            for (signature in info.signatures) {
+                var md: MessageDigest
+                md = MessageDigest.getInstance("SHA")
+                md.update(signature.toByteArray())
+                val something = String(Base64.encode(md.digest(), 0))
+                Log.e("Hash key", something)
+            }
+        } catch (e: Exception) {
+
+            Log.e("name not found", e.toString())
         }
     }
+
+    */
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
 
         progressDialog=ProgressDialog(this)
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
@@ -178,9 +233,12 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                         Log.d("Main","currentLocation: ${location.latitude}, ${location.longitude}")
                     }
 
+                    getLockerLocation(mCurrentLocation.latitude,mCurrentLocation.longitude)
+
                 }
             }
         }
+
 
         mLayout=findViewById(R.id.layout_main)
         btnRent=findViewById<Button>(R.id.rent)
