@@ -135,6 +135,38 @@ def location_request():
 
     return make_response(jsonify(lockers))
 
+@app.route('/idcheck',methods=['GET'])
+def idcheck_request():
+    id=request.args.get('id')
+
+    sql="select count(*) from users where id=\'"+id+"\'"
+    cursor.execute(sql)
+    result=cursor.fetchone()
+
+    if result[0]>=1: #중복 되는 경우
+        return make_response(jsonify({"result":"fail"}))
+    else:
+        return make_response(jsonify({"result":"pass"}))
+
+
+@app.route('/adduser',methods=['POST'])
+def adduser_request():
+    if(request.is_json):
+        params=request.get_json()
+        id=params['id']
+        password=params['password']
+        email=params['email']
+
+        data=(id,password,email)
+        sql="insert into users(id,pw,email) values(%s,%s,%s)"
+        cursor.execute(sql,data)
+        lockerdb.commit()
+
+        return make_response(jsonify({"result":"pass"}))
+
+    return make_response(jsonify({"result":"fail"}))
+
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=2259, debug=True, threaded=True)
