@@ -1,5 +1,7 @@
 package com.example.penaltykick
 
+import android.animation.Animator
+import android.animation.AnimatorInflater
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -10,6 +12,8 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.view.View
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.*
 
 import androidx.activity.result.ActivityResultLauncher
@@ -33,6 +37,8 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.*
 import java.io.*
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.jvm.Throws
@@ -43,6 +49,10 @@ class onRentActivity : AppCompatActivity() {
     lateinit var currentPhotoPath:String
     lateinit var activityResultLauncher:ActivityResultLauncher<Uri>
     lateinit var lLayout: View
+    lateinit var rentTime:TextView
+    lateinit var printLockerID:TextView
+    lateinit var circleImage:ImageView
+    lateinit var fadeAnimation: Animator
     lateinit var progressDialog:ProgressDialog
     lateinit var photoUri:Uri
     var lockerID by Delegates.notNull<Int>()
@@ -158,6 +168,21 @@ class onRentActivity : AppCompatActivity() {
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
         lockerID=mPreferences.getInt("lockerid",0)
 
+        circleImage=findViewById(R.id.circle)
+        fadeAnimation=AnimatorInflater.loadAnimator(this,R.animator.fade)
+        fadeAnimation.setTarget(circleImage)
+        fadeAnimation.start()
+
+        val time=LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM월 dd일 HH시 mm분"))
+        rentTime=findViewById(R.id.rent_time)
+        val showStartTimeString="시작 시간: $time"
+        rentTime.text = showStartTimeString
+
+        printLockerID=findViewById(R.id.locker_id)
+        val showPrintLockerString= "이용 중인 기기: $lockerID"
+        printLockerID.text=showPrintLockerString
+
+
         btnReturn=findViewById<Button>(R.id.ret)
         lLayout=findViewById(R.id.rent_layout)
 
@@ -186,6 +211,21 @@ class onRentActivity : AppCompatActivity() {
 
         }
 
+    }
+
+    override fun onPause() {
+        super.onPause()
+        fadeAnimation.cancel()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        fadeAnimation.cancel()
+    }
+
+    override fun onStart(){
+        super.onStart()
+        fadeAnimation.start()
     }
 
     private fun CameraPermission(){

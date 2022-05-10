@@ -9,22 +9,25 @@
     android:background="@color/background"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
-    android:paddingTop="16dp">
+    android:paddingTop="50dp">
 
     <ImageView
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:background="@drawable/intro"
-        android:layout_gravity="center"/>
+        android:layout_height="350dp"
+        android:background="@drawable/intro_new"
+        android:layout_gravity="center" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="16dp"
+        app:errorEnabled="true">
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:hint="id"
+            android:hint="ID"
+            android:inputType="text"
+            android:maxLines="1"
             android:id="@+id/id">
         </com.google.android.material.textfield.TextInputEditText>
     </com.google.android.material.textfield.TextInputLayout>
@@ -32,11 +35,15 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="16dp"
+        app:passwordToggleEnabled="false"
+        app:errorEnabled="true">
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:hint="Password"
+            android:inputType="textPassword"
+            android:maxLines="1"
             android:id="@+id/password">
         </com.google.android.material.textfield.TextInputEditText>
     </com.google.android.material.textfield.TextInputLayout>

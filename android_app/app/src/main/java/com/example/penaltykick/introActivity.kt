@@ -60,11 +60,6 @@ class introActivity : AppCompatActivity() {
             }
         }
 
-        /*
-        실제 구현시에는 자동로그인 되어있을 경우 화면 넘기기
-        대여 되어있는 경우에는 백그라운드로 계속 돌리게 할 것이므로 여기서는 따로 설정할 필요 없음
-        로그인 안되어있을 경우 로그인 화면으로 넘어가게 할 것
-         */
         val handler= Handler()
         handler.postDelayed({
             startActivity(intent)

@@ -5,11 +5,13 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import com.google.android.material.textfield.TextInputEditText
 import okhttp3.OkHttpClient
 import org.json.JSONObject
 import retrofit2.Call
@@ -38,15 +40,33 @@ class loginActivity : AppCompatActivity() {
         id=findViewById(R.id.id)
         password=findViewById(R.id.password)
 
+
+
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
 
 
         loginBtn.setOnClickListener {
-            login(id.text.toString(),password.text.toString())
+
+            var check=true
+
+            if(id.text.isEmpty()){
+                id.setError("아이디를 입력하세요")
+                check=false
+            }
+
+            if(password.text.isEmpty()){
+                password.setError("비밀번호를 입력하세요")
+                check=false
+            }
+
+            if(check){
+                login(id.text.toString(),password.text.toString())
+            }
+
         }
 
-
     }
+
 
     private fun login(id: String, pw: String){
 

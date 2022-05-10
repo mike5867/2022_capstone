@@ -14,12 +14,15 @@ import android.os.Bundle
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
+import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -34,8 +37,6 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.snackbar.Snackbar
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import kotlinx.coroutines.*
-import net.daum.mf.map.api.MapView
 
 import org.json.JSONObject
 import retrofit2.Call
@@ -71,6 +72,8 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
     val FASTEST_UPDATE_INTERVAL_MS=10000
     val PERMISSIONS_REQUEST_CODE=100
     val REQUIRED_PERMISSIONS=Array<String>(1){android.Manifest.permission.ACCESS_FINE_LOCATION}
+
+
 
     private fun connectMainToUnlock(lockerId:Int){
 
@@ -199,11 +202,36 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     */
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.appbar_action,menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.action_logout->{
+                val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
+                preferencesEditor.putString("userid",null)
+                preferencesEditor.apply()
+                val intent=Intent(this,loginActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+
+            R.id.action_log->return false
+
+
+        }
+
+        return super.onOptionsItemSelected(item)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val tb: Toolbar =findViewById(R.id.app_actionbar)
+        setSupportActionBar(tb)
 
         progressDialog=ProgressDialog(this)
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
@@ -242,7 +270,6 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
         mLayout=findViewById(R.id.layout_main)
         btnRent=findViewById<Button>(R.id.rent)
-        btnLogout=findViewById<Button>(R.id.logout)
 
         qrScanLauncher=registerForActivityResult(ScanContract()){result->
             if(result.contents==null){
@@ -266,18 +293,6 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
             qrScanLauncher.launch(scanOptions)
         }
-
-        btnLogout.setOnClickListener{
-            val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
-            preferencesEditor.putString("userid",null)
-            preferencesEditor.apply()
-            val intent=Intent(this,loginActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-
-
-
 
     }
 
