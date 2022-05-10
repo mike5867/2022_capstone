@@ -113,9 +113,14 @@ def unlock_request():
     return make_response(jsonify({"result": "fail"}))
 
 
-@app.route('/location')
+@app.route('/location', methods=['GET'])
 def location_request():
-    sql = "select id, latitude, longitude from locker"
+    currentLatitude=request.args.get('lat')
+    currentLongitude=request.args.get('long')
+
+    sql = "select id, latitude, longitude, (6371*acos(cos(radians("+currentLatitude+"))" \
+        "*cos(radians(latitude))*cos(radians(longitude)-radians("+currentLongitude+"))" \
+        "+sin(radians("+currentLatitude+"))*sin(radians(latitude))))as distance from locker having distance <=3"
     cursor.execute(sql)
     result = cursor.fetchall()
 
@@ -125,11 +130,11 @@ def location_request():
         latitude = row[1]
         longitude = row[2]
 
-        locker = {"id": id, "location": {"latitude": latitude, "longitude": longitude}}
+        locker = {"id": id, "latitude": latitude, "longitude": longitude}
         lockers.append(locker)
 
     return make_response(jsonify(lockers))
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=2259, debug=True)
+    app.run(host='0.0.0.0', port=2259, debug=True, threaded=True)
