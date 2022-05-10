@@ -36,7 +36,7 @@ class loginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         loginBtn=findViewById<LinearLayout>(R.id.login)
-        signIn=findViewById<TextView>(R.id.sign_in)
+        signIn=findViewById<TextView>(R.id.sign_up)
         id=findViewById(R.id.id)
         password=findViewById(R.id.password)
 
@@ -50,12 +50,12 @@ class loginActivity : AppCompatActivity() {
             var check=true
 
             if(id.text.isEmpty()){
-                id.setError("아이디를 입력하세요")
+                id.error="아이디를 입력하세요"
                 check=false
             }
 
             if(password.text.isEmpty()){
-                password.setError("비밀번호를 입력하세요")
+                password.error = "비밀번호를 입력하세요"
                 check=false
             }
 
@@ -63,6 +63,12 @@ class loginActivity : AppCompatActivity() {
                 login(id.text.toString(),password.text.toString())
             }
 
+        }
+
+        signIn.setOnClickListener{
+            val signupActivity=Intent(this@loginActivity,SignupActivity::class.java)
+            startActivity(signupActivity)
+            finish()
         }
 
     }

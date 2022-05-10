@@ -20,11 +20,11 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
         app:errorEnabled="true">
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="55dp"
+            android:fontFamily="@font/nanumbarungothic"
             android:hint="ID"
             android:inputType="text"
             android:maxLines="1"
@@ -40,7 +40,8 @@
         app:errorEnabled="true">
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="55dp"
+            android:fontFamily="@font/nanumbarungothic"
             android:hint="Password"
             android:inputType="textPassword"
             android:maxLines="1"
@@ -83,23 +84,24 @@
         android:orientation="horizontal"
         android:weightSum="10"
         android:layout_marginBottom="16dp"
-        android:layout_marginTop="3dp">
+        android:layout_marginTop="10dp">
 
         <TextView
+            android:id="@+id/find_password"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:layout_weight="4"
+            android:layout_weight="4.5"
             android:text="비밀번호 찾기"
             android:textSize="13sp"/>
 
         <TextView
+            android:id="@+id/sign_up"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:layout_weight="6"
+            android:layout_weight="5.5"
             android:text="회원 가입"
-            android:id="@+id/sign_in"
             android:textSize="13sp"
             android:textColor="@color/orange"/>
 

@@ -18,4 +18,11 @@
             <solid android:color="@color/yellow"/>
         </shape>
     </item>
+
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <corners android:radius="100dp"/>
+            <solid android:color="@color/dark_gray"/>
+        </shape>
+    </item>
 </selector>

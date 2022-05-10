@@ -21,6 +21,12 @@ interface RetrofitInterface {
     @GET("/location")
     fun lockerLocationRequest(@Query("lat")lat:Double, @Query("long")long:Double):Call<MutableList<LockerLocation>>
 
+    @GET("/idcheck")
+    fun duplicateCheckRequest(@Query("id")id:String):Call<String>
+
+    @POST("/adduser")
+    fun addUserRequest(@Body user:User):Call<String>
+
 
 
 }
