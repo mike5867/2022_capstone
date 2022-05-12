@@ -77,7 +77,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
     private fun connectMainToUnlock(lockerId:Int){
 
-        val server=retrofitClient.deeplearningServer
+        val server=retrofitClient.mainServer
 
         server.unlockRequest(lockerId).enqueue(object:Callback<String>{
             override fun onFailure(call: Call<String>, t: Throwable) {

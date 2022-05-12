@@ -89,11 +89,14 @@ class SignupActivity : AppCompatActivity() {
             userId.error="아이디를 입력하세요"
             isOk=false
         }
-
-        if(duplicateIdBtn.isEnabled){
-            Toast.makeText(applicationContext,"아이디 중복 확인이 필요합니다.",Toast.LENGTH_LONG).show()
-            isOk=false
+        else{
+            if(duplicateIdBtn.isEnabled){
+                userId.error="아이디 중복확인이 필요합니다."
+                isOk=false
+            }
         }
+
+
 
         if(userPw.text.isEmpty()){
             userPw.error="비밀번호를 입력하세요"
@@ -142,8 +145,6 @@ class SignupActivity : AppCompatActivity() {
 
                     if(resultCode=="pass"){
                         Toast.makeText(applicationContext,"회원 가입이 완료되었습니다.",Toast.LENGTH_LONG).show()
-                        val intent= Intent(this@SignupActivity,loginActivity::class.java)
-                        startActivity(intent)
                         finish()
                     }
                     else if(resultCode=="fail"){

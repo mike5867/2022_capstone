@@ -5,8 +5,16 @@ import java.util.concurrent.TimeUnit
 
 class Constants {
     companion object{
-        const val MAIN_SERVER_ADDRESS="http://112.150.64.201:2259"
+
+        //home
+        //const val MAIN_SERVER_ADDRESS="http://112.150.64.201:2259"
         const val DEEPLEARNING_SERVER_ADDRESS="http://112.150.64.201:2258"
+
+
+
+        //AWS
+        const val MAIN_SERVER_ADDRESS="http://13.209.157.195:2259"
+        //const val DEEPLEARNING_SERVER_ADDRESS="http://13.209.157.195:2258"
 
     }
 }
