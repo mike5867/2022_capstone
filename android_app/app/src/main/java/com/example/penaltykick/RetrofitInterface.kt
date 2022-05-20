@@ -10,13 +10,13 @@ interface RetrofitInterface {
     fun postImageRequest(@Part imageFile: MultipartBody.Part): Call<String>
 
     @GET("/lock")
-    fun lockRequest(@Query("id") locker_id:Int): Call<String>
+    fun lockRequest(@Query("id") locker_id:Int, @Query("user") userid:String): Call<String>
 
     @GET("/unlock")
-    fun unlockRequest(@Query("id") locker_id:Int): Call<String>
+    fun unlockRequest(@Query("id") locker_id:Int, @Query("user") userid:String): Call<String>
 
-    @GET("/login")
-    fun loginRequest(@Query("id")id:String, @Query("pw")pw:String):Call<String>
+    @POST("/login")
+    fun loginRequest(@Body user:User):Call<LoginResult>
 
     @GET("/location")
     fun lockerLocationRequest(@Query("lat")lat:Double, @Query("long")long:Double):Call<MutableList<LockerLocation>>

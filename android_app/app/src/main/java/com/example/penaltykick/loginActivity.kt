@@ -4,20 +4,15 @@ import android.content.Intent
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import com.google.android.material.textfield.TextInputEditText
-import okhttp3.OkHttpClient
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.concurrent.TimeUnit
@@ -41,7 +36,6 @@ class loginActivity : AppCompatActivity() {
         password=findViewById(R.id.password)
 
 
-
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
 
 
@@ -60,7 +54,8 @@ class loginActivity : AppCompatActivity() {
             }
 
             if(check){
-                login(id.text.toString(),password.text.toString())
+                val user=User(id.text.toString(),password.text.toString(),"")
+                login(user)
             }
 
         }
@@ -73,50 +68,58 @@ class loginActivity : AppCompatActivity() {
     }
 
 
-    private fun login(id: String, pw: String){
+    private fun login(user:User){
 
         val server=retrofitClient.mainServer
-        server.loginRequest(id,pw).enqueue(object: Callback<String> {
-            override fun onFailure(call: Call<String>, t: Throwable) {
-                Log.d("main server",t.localizedMessage)
+        server.loginRequest(user).enqueue(object: Callback<LoginResult> {
+            override fun onFailure(call: Call<LoginResult>, t: Throwable) {
+                Log.d("main server","server error"+t.message.toString())
                 Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
             }
 
-            override fun onResponse(call: Call<String>, response: Response<String>) {
-                if(response?.isSuccessful){
-                    Log.d("main server",response?.body().toString())
-                    val result=JSONObject(response.body().toString()).getString("result")
+            override fun onResponse(call: Call<LoginResult>, response: Response<LoginResult>) {
+                if(response.isSuccessful){
+                    Log.d("main server", response.body().toString())
+                    val result: LoginResult = response.body()!!
 
-                    if(result=="not exist"){
-                        Toast.makeText(applicationContext,"일치하는 계정이 없습니다.",Toast.LENGTH_LONG).show()
+                    if(result.id=="not exist" || result.id=="wrong pw"){
+                        Toast.makeText(applicationContext,"아이디나 비밀번호를 확인하세요.",Toast.LENGTH_LONG).show()
                     }
-                    else if(result=="exist"){ //result=="exist"
+                    else { //result=="exist"
+
+                        if(result.id=="admin"){
+                            startActivity(Intent(this@loginActivity,AdminActivity::class.java))
+                        }
 
                         Toast.makeText(applicationContext,"로그인 성공",Toast.LENGTH_LONG).show()
-                        val onRenting=JSONObject(response.body().toString()).getString("locker id")
+                        val onRenting=result.onRent
 
                         val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
-                        preferencesEditor.putString("userid",id)
-                        preferencesEditor.putInt("lockerid",onRenting.toInt())
+                        preferencesEditor.putString("userid",result.id)
+                        preferencesEditor.putInt("lockerid",onRenting)
                         preferencesEditor.apply()
 
-                        if(onRenting=="0"){ //대여중이 아닌경우
-                            val rentIntent=Intent(this@loginActivity,MainActivity::class.java)
-                            startActivity(rentIntent)
+                        if(onRenting==0){ //대여중이 아닌경우
+                            val mainIntent=Intent(this@loginActivity,MainActivity::class.java)
+                            startActivity(mainIntent)
                             finish()
 
                         }
                         else{ //대여중인경우
-                            val mainIntent= Intent(this@loginActivity,onRentActivity::class.java)
-                            startActivity(mainIntent)
+                            // 시간 기록
+                            val startTime=result.time
+                            preferencesEditor.putString("time",startTime)
+                            preferencesEditor.apply()
+                            val rentIntent= Intent(this@loginActivity,onRentActivity::class.java)
+                            startActivity(rentIntent)
                             finish()
                         }
                     }
-                    else{
-                        Log.d("main server","Some error occured")
-                        Toast.makeText(applicationContext,"서버 응답이 잘못 되었습니다.",Toast.LENGTH_LONG).show()
-                    }
 
+                }
+                else{
+                    Log.d("main server","Some error occured")
+                    Toast.makeText(applicationContext,"서버 응답이 잘못 되었습니다.",Toast.LENGTH_LONG).show()
                 }
             }
         })

@@ -46,6 +46,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.security.MessageDigest
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 
@@ -79,21 +81,24 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
 
         val server=retrofitClient.mainServer
 
-        server.unlockRequest(lockerId).enqueue(object:Callback<String>{
+        server.unlockRequest(lockerId,mPreferences.getString("userid",null).toString()).enqueue(object:Callback<String>{
             override fun onFailure(call: Call<String>, t: Throwable) {
-                Log.d("main server",t.localizedMessage)
+                Log.d("main server","server error"+t.message.toString())
                 Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
                 progressDialog.dismiss()
             }
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
-                if(response?.isSuccessful){
-                    Log.d("main server",response?.body().toString())
+                if(response.isSuccessful){
+                    Log.d("main server", response.body().toString())
                     val resultCode=JSONObject(response.body().toString()).getString("result")
 
                     if(resultCode=="success"){
                         val preferencesEditor=mPreferences.edit()
+                        //val time= LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM월 dd일 HH시 mm분"))
+                        val time=JSONObject(response.body().toString()).getString("time")
                         preferencesEditor.putInt("lockerid",lockerId)
+                        preferencesEditor.putString("time",time)
                         preferencesEditor.apply()
 
                         Toast.makeText(applicationContext,"잠금 해제가 완료되었습니다.",Toast.LENGTH_LONG).show()
@@ -212,6 +217,8 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
             R.id.action_logout->{
                 val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
                 preferencesEditor.putString("userid",null)
+                preferencesEditor.putString("time",null)
+                preferencesEditor.putInt("lockerid",0)
                 preferencesEditor.apply()
                 val intent=Intent(this,loginActivity::class.java)
                 startActivity(intent)

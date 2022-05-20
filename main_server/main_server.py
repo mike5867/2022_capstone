@@ -2,6 +2,7 @@ from flask import Flask, request, make_response, jsonify
 
 import pymysql
 import time
+import datetime
 
 app = Flask(__name__)
 
@@ -15,19 +16,25 @@ def hello():
     return '<h1> hello </h1>'
 
 
-@app.route('/login', methods=['GET'])
+@app.route('/login', methods=['POST'])
 def login():
-    userid = request.args.get('id')
-    userpw = request.args.get('pw')
 
-    sql = "select * from users where id=\'" + userid + "\'"
-    cursor.execute(sql)
-    result = cursor.fetchone()
+    if (request.is_json):
+        params = request.get_json()
+        userid = params['id']
+        userpw = params['password']
 
-    if result == None:
-        return make_response(jsonify({"result": "not exist"}))
-    else:
-        return make_response(jsonify({"result": "exist", "locker id": str(result[2])}))
+        sql = "select * from users where id=\'" + userid + "\'"
+        cursor.execute(sql)
+        result = cursor.fetchone()
+
+        if result == None:  # 아이디가 없는 경우
+            return make_response(jsonify({"id": "not exist"}))
+        elif result[1] != userpw:  # 비밀번호가 틀린 경우
+            return make_response(jsonify({"id": "wrong pw"}))
+        else:
+            return make_response(jsonify({"id": "exist", "locker id": result[2]}))
+
 
 
 @app.route('/state', methods=['GET'])
@@ -63,17 +70,21 @@ def update_state():
 @app.route('/lock', methods=['GET'])
 def lock_request():
     locker_id = request.args.get('id')
+    user_id=request.args.get('user')
 
-    for i in range(0, 3):
+    for i in range(0, 10):
         sql = "update locker set lockflag=1, checkflag=0 where id=\'" + locker_id + "\'"
         cursor.execute(sql)
         lockerdb.commit()
-        time.sleep(5)
+        time.sleep(1)
 
         sql = "select checkflag from locker where id=\'" + locker_id + "\'"
         cursor.execute(sql)
         result = cursor.fetchone()
         if result[0] == 1:  # 잠금장치가 확인한 경우
+            sql = "update users set locker=0 starttime=null where id=\'" + user_id + "\'"
+            cursor.execute(sql)
+            lockerdb.commit()
             return make_response(jsonify({"result": "success"}))
 
     sql = "update locker set lockflag=0 where id=\'" + locker_id + "\'"
@@ -86,6 +97,7 @@ def lock_request():
 @app.route('/unlock', methods=['GET'])
 def unlock_request():
     locker_id = request.args.get('id')
+    user_id=request.args.get('user')
     sql = "select lockflag from locker where id=\'" + locker_id + "\'"
     cursor.execute(sql)
     result = cursor.fetchone()
@@ -93,18 +105,23 @@ def unlock_request():
     if result[0] == 0:  # 잠겨있지 않은 경우
         return make_response(jsonify({"result": "already unlock"}))
 
-    for i in range(0, 3):
+    for i in range(0, 10):
         sql = "update locker set lockflag=0, checkflag=0 where id=\'" + locker_id + "\'"
         cursor.execute(sql)
         lockerdb.commit()
-        time.sleep(5)
+        time.sleep(1)
 
         sql = "select checkflag from locker where id=\'" + locker_id + "\'"
         cursor.execute(sql)
         result = cursor.fetchone()
 
         if result[0] == 1:  # 잠금장치가 확인한 경우
-            return make_response(jsonify({"result": "success"}))
+            dt_now=datetime.datetime.now()
+            time_parse=str(dt_now.year)+'년'+str(dt_now.month)+'월'+str(dt_now.day)+'일'+str(dt_now.hour)+'시'+str(dt_now.minute)+'분'
+            sql="update users set locker=\'"+locker_id+"\' starttime=\'"+time_parse+"\' where id=\'"+user_id+"\'"
+            cursor.execute(sql)
+            lockerdb.commit()
+            return make_response(jsonify({"result": "success","time":time_parse}))
 
     sql = "update locker set lockflag=1 where id=\'" + locker_id + "\'"
     cursor.execute(sql)

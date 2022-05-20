@@ -25,6 +25,9 @@
         android:theme="@style/Theme.PenaltyKick"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".AdminActivity"
+            android:exported="false" />
+        <activity
             android:name=".Findpassword"
             android:exported="false" />
         <activity
@@ -34,10 +37,10 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAP_API}" />
+
         <activity
             android:name=".onRentActivity"
-            android:exported="true">
-        </activity>
+            android:exported="true"></activity>
         <activity
             android:name=".loginActivity"
             android:exported="true" />
@@ -49,7 +52,6 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
         <activity
             android:name=".MainActivity"

@@ -46,11 +46,13 @@ class introActivity : AppCompatActivity() {
 
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
 
-        val idcheck=mPreferences.getString("userid","not exist")
+        val idcheck=mPreferences.getString("userid",null)
 
-        if(idcheck=="not exist"){
+        //기록된 id가 없는 경우 로그인 액티비티 실행
+        if(idcheck==null){
             intent= Intent(this,loginActivity::class.java)
         }else{
+            //대여중인 잠금 장치가 없는 경우(locker id = 0)
             val locker=mPreferences.getInt("lockerid",0)
             if(locker==0){
                 intent=Intent(this,MainActivity::class.java)

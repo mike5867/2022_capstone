@@ -8,5 +8,5 @@ data class User(
     @SerializedName("password")
     var password:String,
     @SerializedName("email")
-    var email:String
+    var email:String,
 )

@@ -56,6 +56,7 @@ class onRentActivity : AppCompatActivity() {
     lateinit var progressDialog:ProgressDialog
     lateinit var photoUri:Uri
     var lockerID by Delegates.notNull<Int>()
+    lateinit var startTime:String
     lateinit var mPreferences:SharedPreferences
     private val PERMISSION_REQUEST_CODE=300
     private val REQUIRED_PERMISSONS=Array<String>(1){android.Manifest.permission.CAMERA}
@@ -75,7 +76,7 @@ class onRentActivity : AppCompatActivity() {
 
         val server=retrofitClient.mainServer
 
-        server.lockRequest(lockerId).enqueue(object:Callback<String>{
+        server.lockRequest(lockerId, mPreferences.getString("userid","").toString()).enqueue(object:Callback<String>{
             override fun onFailure(call: Call<String>, t: Throwable) {
                 Log.d("main server",t.localizedMessage)
                 Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
@@ -124,14 +125,14 @@ class onRentActivity : AppCompatActivity() {
 
         server.postImageRequest(body).enqueue(object : Callback<String> {
             override fun onFailure(call: Call<String>, t: Throwable) {
-                Log.d("deep learning server",t.localizedMessage)
+                Log.d("deep learning server","server error"+t.message.toString())
                 Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
                 progressDialog.dismiss()
             }
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
-                if(response?.isSuccessful){
-                    Log.d("deep learning server",response?.body().toString())
+                if(response.isSuccessful){
+                    Log.d("deep learning server", response.body().toString())
                     val resultCode=JSONObject(response.body().toString()).getString("result")
 
                     if (resultCode=="pass"){
@@ -167,15 +168,15 @@ class onRentActivity : AppCompatActivity() {
 
         mPreferences=getSharedPreferences("user", MODE_PRIVATE)
         lockerID=mPreferences.getInt("lockerid",0)
+        startTime= mPreferences.getString("time",null).toString()
 
         circleImage=findViewById(R.id.circle)
         fadeAnimation=AnimatorInflater.loadAnimator(this,R.animator.fade)
         fadeAnimation.setTarget(circleImage)
         fadeAnimation.start()
 
-        val time=LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM월 dd일 HH시 mm분"))
         rentTime=findViewById(R.id.rent_time)
-        val showStartTimeString="시작 시간: $time"
+        val showStartTimeString="시작 시간: $startTime"
         rentTime.text = showStartTimeString
 
         printLockerID=findViewById(R.id.locker_id)
