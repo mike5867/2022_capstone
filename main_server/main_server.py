@@ -18,7 +18,6 @@ def hello():
 
 @app.route('/login', methods=['POST'])
 def login():
-
     if (request.is_json):
         params = request.get_json()
         userid = params['id']
@@ -29,11 +28,14 @@ def login():
         result = cursor.fetchone()
 
         if result == None:  # 아이디가 없는 경우
-            return make_response(jsonify({"id": "not exist"}))
+            return make_response(jsonify({"result": "not exist"}))
         elif result[1] != userpw:  # 비밀번호가 틀린 경우
-            return make_response(jsonify({"id": "wrong pw"}))
-        else:
-            return make_response(jsonify({"id": "exist", "locker id": result[2]}))
+            return make_response(jsonify({"result": "wrong pw"}))
+        else: # 로그인 성공
+            if result[2]==0: # 대여중이 아닌 경우
+                return make_response(jsonify({"result": "exist", "locker id": result[2]}))
+            else:
+                return make_response(jsonify({"result":"exist","locker id":result[2],"start time":str(result[4])}))
 
 
 

@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -71,31 +72,31 @@ class loginActivity : AppCompatActivity() {
     private fun login(user:User){
 
         val server=retrofitClient.mainServer
-        server.loginRequest(user).enqueue(object: Callback<LoginResult> {
-            override fun onFailure(call: Call<LoginResult>, t: Throwable) {
+        server.loginRequest(user).enqueue(object: Callback<String> {
+            override fun onFailure(call: Call<String>, t: Throwable) {
                 Log.d("main server","server error"+t.message.toString())
                 Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
             }
 
-            override fun onResponse(call: Call<LoginResult>, response: Response<LoginResult>) {
+            override fun onResponse(call: Call<String>, response: Response<String>) {
                 if(response.isSuccessful){
                     Log.d("main server", response.body().toString())
-                    val result: LoginResult = response.body()!!
+                    val result=JSONObject(response.body().toString()).getString("result")
 
-                    if(result.id=="not exist" || result.id=="wrong pw"){
+                    if(result=="not exist" || result=="wrong pw"){
                         Toast.makeText(applicationContext,"아이디나 비밀번호를 확인하세요.",Toast.LENGTH_LONG).show()
                     }
                     else { //result=="exist"
 
-                        if(result.id=="admin"){
+                        if(result=="admin"){
                             startActivity(Intent(this@loginActivity,AdminActivity::class.java))
                         }
 
                         Toast.makeText(applicationContext,"로그인 성공",Toast.LENGTH_LONG).show()
-                        val onRenting=result.onRent
+                        val onRenting=JSONObject(response.body().toString()).getInt("locker id")
 
                         val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
-                        preferencesEditor.putString("userid",result.id)
+                        preferencesEditor.putString("userid",user.id)
                         preferencesEditor.putInt("lockerid",onRenting)
                         preferencesEditor.apply()
 
@@ -107,7 +108,7 @@ class loginActivity : AppCompatActivity() {
                         }
                         else{ //대여중인경우
                             // 시간 기록
-                            val startTime=result.time
+                            val startTime=JSONObject(response.body().toString()).getString("start time")
                             preferencesEditor.putString("time",startTime)
                             preferencesEditor.apply()
                             val rentIntent= Intent(this@loginActivity,onRentActivity::class.java)
