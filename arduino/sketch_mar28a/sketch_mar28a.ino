@@ -4,21 +4,25 @@
 const String LOCKER_ID="1";
 String LOCK_STATE="1";
 
-const char ssid[]="Room";
-const char password[]="Tmvhswl123!";
+//const char ssid[]="Room";
+//const char password[]="Tmvhswl123!";
+const char ssid[]="iPhone 13 Pro";
+const char password[]="11111111";
 int status=WL_IDLE_STATUS;
-const char server[]="192.168.0.17";
+const char server[]="13.209.157.195";
+//const char server[]="192.168.0.17";
 WiFiClient client;
 unsigned long lastConnectionTime=0;
 const unsigned long interval= 10L*1000L;
 
-const int AA=9; //모터 A의 A를 6번 핀에 배치
-const int AB=10; //모터 B의 B를 7번 핀에 배치
-const int speed=100;
+//const int speaker=12;
+//const int hz=440;
+const int AA=9; //moter pin 
+const int AB=10; //moter pin
 String str="";
 String targetStr="GPGGA";
-String Latitude="";
-String Longitude="";
+String Latitude="null";
+String Longitude="null";
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -26,6 +30,8 @@ void setup() {
   //moter setting
   pinMode(AA,OUTPUT);
   pinMode(AB,OUTPUT);
+  
+  //pinMode(speaker,OUTPUT);
 
   while(status!=WL_CONNECTED){
     Serial.print("Attempting to connect to SSID: ");
@@ -35,6 +41,13 @@ void setup() {
   }
 
   Serial.println("WiFi connected");
+  /*
+  tone(speaker,hz,300);
+  delay(300);
+  tone(speaker,hz,300);
+  delay(300);
+  tone(speaker,hz,300);
+  */
   printWifiStatus();
 
   Serial.println("Start GPS...");
@@ -52,36 +65,42 @@ void loop() {
     if(c=='\n'){
       headercount++;
     }
-    if(headercount==6){ //data section
+    if(headercount==7){ //data section
       buf+=c;
     }
   }
   
-  if(headercount==7){ //received finish
+  if(headercount==8){ //received finish
     Serial.println();
     buf.remove(0,1);
+    
     if(buf=="changed"){
       if(LOCK_STATE=="1"){
         LOCK_STATE="0";
         Serial.println("unlocking...");
-
-        analogWrite(AA,speed);
-        analogWrite(AB,0);
-        delay(1000);
+        //tone(speaker,hz,300);
+        //delay(300);
+        //tone(speaker,hz,300);
+        
+        analogWrite(AA,0);
+        analogWrite(AB,255);
+        delay(2600);
 
         analogWrite(AA,0);
-        analogWrite(AB,0);
+        analogWrite(AB,0);        
       }
       else{ //LOCK_STATE="0"
         LOCK_STATE="1";
         Serial.println("locking...");
+        //tone(speaker,hz,600);
+        
+        analogWrite(AA,255);
+        analogWrite(AB,0);
+        delay(2600);
 
         analogWrite(AA,0);
-        analogWrite(AB,speed);
-        delay(1000);
-
-        digitalWrite(AA,0);
-        digitalWrite(AB,0);
+        analogWrite(AB,0);
+        
       }
     }
     else{
@@ -121,8 +140,8 @@ void loop() {
           Longitude="null";
         }
         else{
-          Latitude=String();
-          Longitude=String();
+          Latitude=String(d_Lat,7);
+          Longitude=String(d_Long,7);
         }
         
         //Serial.print("Latitude: ");
@@ -178,6 +197,8 @@ void stateRequest(){
     Serial.println("connecting...");
 
     client.println("GET /state?id="+LOCKER_ID+"&state="+LOCK_STATE+"&lat="+Latitude+"&long="+Longitude+" HTTP/1.1");
+    client.println("Host: 13.209.157.195:2259");
+    client.println("Connection: close");
     client.println();
 
     lastConnectionTime=millis();
