@@ -5,6 +5,7 @@ import time
 import datetime
 
 app = Flask(__name__)
+app.config['JSON_AS_ASCII']=False
 
 lockerdb = pymysql.connect(host='localhost', port=3306, user='root', db='penaltykickdb', password='root',
                            charset='utf8')
@@ -35,7 +36,10 @@ def login():
             if result[2]==0: # 대여중이 아닌 경우
                 return make_response(jsonify({"result": "exist", "locker id": result[2]}))
             else:
-                return make_response(jsonify({"result":"exist","locker id":result[2],"start time":str(result[4]), "type":str(result[5])}))
+                sql="select type from locker where id=\'"+str(result[2])+"\'"
+                cursor.execute(sql)
+                type_result=cursor.fetchone()
+                return make_response(jsonify({"result":"exist","locker id":result[2],"start time":str(result[4]), "type":str(type_result[0])}))
 
 
 
@@ -120,7 +124,7 @@ def unlock_request():
 
         if result[0] == 1:  # 잠금장치가 확인한 경우
             dt_now=datetime.datetime.now()
-            time_parse=str(dt_now.year)+'y'+str(dt_now.month)+'m'+str(dt_now.day)+'d'+str(dt_now.hour)+'h'+str(dt_now.minute)+'m'
+            time_parse=str(dt_now.year)+'년 '+str(dt_now.month)+'월 '+str(dt_now.day)+'일 '+str(dt_now.hour)+'시 '+str(dt_now.minute)+'분'
             sql="update users set locker=\'"+locker_id+"\', starttime=\'"+time_parse+"\' where id=\'"+user_id+"\'"
             cursor.execute(sql)
             lockerdb.commit()

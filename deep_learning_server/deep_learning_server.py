@@ -14,7 +14,7 @@ def hello_pybo():
 @app.route('/photo', methods=['POST'])
 def received_photo():
     f=request.files['uploaded_file']
-    type=request.form['locker_type']
+    type=request.form['lockerType']
     file_path='./received_photo/'+secure_filename(f.filename)
     f.save(file_path)
 
