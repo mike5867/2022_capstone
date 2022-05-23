@@ -91,6 +91,7 @@ class onRentActivity : AppCompatActivity() {
                     if (resultCode=="success") {
                         val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
                         preferencesEditor.putInt("lockerid",0)
+                        preferencesEditor.putString("type",null)
                         preferencesEditor.apply()
 
                         Toast.makeText(applicationContext, "잠금이 완료되었습니다.", Toast.LENGTH_LONG).show()
@@ -117,13 +118,14 @@ class onRentActivity : AppCompatActivity() {
     private fun connectDeepLearning(path:String){
         val file=File(path)
         val fileName=photoUri.lastPathSegment.toString()
+        val lockerType=RequestBody.create(MediaType.parse("text/plain"),mPreferences.getString("type",null).toString())
 
         var requestBody:RequestBody= RequestBody.create(MediaType.parse("image/*"),file)
         var body:MultipartBody.Part=MultipartBody.Part.createFormData("uploaded_file",fileName,requestBody)
 
         val server=retrofitClient.deeplearningServer
 
-        server.postImageRequest(body).enqueue(object : Callback<String> {
+        server.postImageRequest(body,lockerType).enqueue(object : Callback<String> {
             override fun onFailure(call: Call<String>, t: Throwable) {
                 Log.d("deep learning server","server error"+t.message.toString())
                 Toast.makeText(applicationContext,"서버 연결에 실패했습니다.",Toast.LENGTH_LONG).show()
@@ -140,6 +142,10 @@ class onRentActivity : AppCompatActivity() {
                         //arduino server request
 
                         connectMainToLock(lockerID)
+                    }
+                    else if(resultCode=="different"){
+                        Toast.makeText(applicationContext,"다른 기기입니다. 다시 촬영하십시오.",Toast.LENGTH_LONG).show()
+                        progressDialog.dismiss()
                     }
                     else if(resultCode=="fail"){
                         Toast.makeText(applicationContext,"올바른 장소에 주차 후 다시 반납하세요.",Toast.LENGTH_LONG).show()

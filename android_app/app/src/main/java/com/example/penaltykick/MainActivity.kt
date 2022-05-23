@@ -97,8 +97,10 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                         val preferencesEditor=mPreferences.edit()
                         //val time= LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM월 dd일 HH시 mm분"))
                         val time=JSONObject(response.body().toString()).getString("time")
+                        val type=JSONObject(response.body().toString()).getString("type")
                         preferencesEditor.putInt("lockerid",lockerId)
                         preferencesEditor.putString("time",time)
+                        preferencesEditor.putString("type",type)
                         preferencesEditor.apply()
 
                         Toast.makeText(applicationContext,"잠금 해제가 완료되었습니다.",Toast.LENGTH_LONG).show()
@@ -218,6 +220,7 @@ OnMyLocationClickListener,ActivityCompat.OnRequestPermissionsResultCallback{
                 val preferencesEditor:SharedPreferences.Editor=mPreferences.edit()
                 preferencesEditor.putString("userid",null)
                 preferencesEditor.putString("time",null)
+                preferencesEditor.putString("type",null)
                 preferencesEditor.putInt("lockerid",0)
                 preferencesEditor.apply()
                 val intent=Intent(this,loginActivity::class.java)

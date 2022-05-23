@@ -35,7 +35,7 @@ def login():
             if result[2]==0: # 대여중이 아닌 경우
                 return make_response(jsonify({"result": "exist", "locker id": result[2]}))
             else:
-                return make_response(jsonify({"result":"exist","locker id":result[2],"start time":str(result[4])}))
+                return make_response(jsonify({"result":"exist","locker id":result[2],"start time":str(result[4]), "type":str(result[5])}))
 
 
 
@@ -84,7 +84,7 @@ def lock_request():
         cursor.execute(sql)
         result = cursor.fetchone()
         if result[0] == 1:  # 잠금장치가 확인한 경우
-            sql = "update users set locker=0 starttime=null where id=\'" + user_id + "\'"
+            sql = "update users set locker=0, starttime=null where id=\'" + user_id + "\'"
             cursor.execute(sql)
             lockerdb.commit()
             return make_response(jsonify({"result": "success"}))
@@ -113,17 +113,20 @@ def unlock_request():
         lockerdb.commit()
         time.sleep(1)
 
-        sql = "select checkflag from locker where id=\'" + locker_id + "\'"
+        sql = "select checkflag, type from locker where id=\'" + locker_id + "\'"
         cursor.execute(sql)
         result = cursor.fetchone()
+        locker_type=result[1]
 
         if result[0] == 1:  # 잠금장치가 확인한 경우
             dt_now=datetime.datetime.now()
-            time_parse=str(dt_now.year)+'년'+str(dt_now.month)+'월'+str(dt_now.day)+'일'+str(dt_now.hour)+'시'+str(dt_now.minute)+'분'
-            sql="update users set locker=\'"+locker_id+"\' starttime=\'"+time_parse+"\' where id=\'"+user_id+"\'"
+            time_parse=str(dt_now.year)+'y'+str(dt_now.month)+'m'+str(dt_now.day)+'d'+str(dt_now.hour)+'h'+str(dt_now.minute)+'m'
+            sql="update users set locker=\'"+locker_id+"\', starttime=\'"+time_parse+"\' where id=\'"+user_id+"\'"
             cursor.execute(sql)
             lockerdb.commit()
-            return make_response(jsonify({"result": "success","time":time_parse}))
+
+
+            return make_response(jsonify({"result": "success","time":time_parse,"type":locker_type}))
 
     sql = "update locker set lockflag=1 where id=\'" + locker_id + "\'"
     cursor.execute(sql)

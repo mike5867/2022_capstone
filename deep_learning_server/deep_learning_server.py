@@ -14,15 +14,18 @@ def hello_pybo():
 @app.route('/photo', methods=['POST'])
 def received_photo():
     f=request.files['uploaded_file']
+    type=request.form['locker_type']
     file_path='./received_photo/'+secure_filename(f.filename)
     f.save(file_path)
 
-    result=checking.judge(file_path)
+    result=checking.judge(file_path,type)
 
     if result==result_code.Result.PASS:
         return make_response(jsonify({"result":"pass"}))
     elif result==result_code.Result.FAIL:
         return make_response(jsonify({"result":"fail"}))
+    elif result==result_code.Result.DIFF:
+        return make_response(jsonify({"result":"different"}))
     else: #DETECTED FAIL
         return make_response(jsonify({"result":"detect fail"}))
 

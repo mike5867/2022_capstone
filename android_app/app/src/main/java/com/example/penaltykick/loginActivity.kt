@@ -88,9 +88,11 @@ class loginActivity : AppCompatActivity() {
                     }
                     else { //result=="exist"
 
+                        /*
                         if(result=="admin"){
                             startActivity(Intent(this@loginActivity,AdminActivity::class.java))
                         }
+                        */
 
                         Toast.makeText(applicationContext,"로그인 성공",Toast.LENGTH_LONG).show()
                         val onRenting=JSONObject(response.body().toString()).getInt("locker id")
@@ -110,6 +112,9 @@ class loginActivity : AppCompatActivity() {
                             // 시간 기록
                             val startTime=JSONObject(response.body().toString()).getString("start time")
                             preferencesEditor.putString("time",startTime)
+                            // 대여 기기 종류 기록
+                            val lockerType=JSONObject(response.body().toString()).getString("type")
+                            preferencesEditor.putString("type",lockerType)
                             preferencesEditor.apply()
                             val rentIntent= Intent(this@loginActivity,onRentActivity::class.java)
                             startActivity(rentIntent)

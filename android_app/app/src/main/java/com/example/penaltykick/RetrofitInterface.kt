@@ -1,13 +1,14 @@
 package com.example.penaltykick
 
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.http.*
 
 interface RetrofitInterface {
     @Multipart
     @POST("/photo")
-    fun postImageRequest(@Part imageFile: MultipartBody.Part): Call<String>
+    fun postImageRequest(@Part imageFile: MultipartBody.Part,@Part("lockerType") lockerType: RequestBody): Call<String>
 
     @GET("/lock")
     fun lockRequest(@Query("id") locker_id:Int, @Query("user") userid:String): Call<String>
